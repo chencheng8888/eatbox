@@ -2,6 +2,7 @@ package service
 
 import (
 	"eat_box/global"
+	"eat_box/internal/model/swagger"
 	"eat_box/pkg/app"
 	"eat_box/pkg/errcode"
 	"encoding/json"
@@ -10,7 +11,17 @@ import (
 )
 
 type LoginRequest struct {
-	Code string `form:"code" binding:""`
+	Code string `form:"code" binding:"required"`
+}
+type UpdateInfoRequest struct {
+	ID        string
+	Nickname  string `form:"nickname" binding:"min=1,max=30"`
+	Tele      string `form:"tele" binding:"len=11"`
+	HeadImage string `form:"headimage" binding:"url"`
+}
+type DetailRequest struct {
+	ID   string `form:"id" binding:"len=10"`
+	Self bool
 }
 type WXLoginResp struct {
 	OpenId     string `json:"openid"`
@@ -59,4 +70,41 @@ func (svc *Service) Login(params *LoginRequest) (bool, string, *errcode.Error) {
 	}
 	token, _ := app.GenerateToken(user.ID)
 	return first, token, errcode.Success
+}
+func (svc *Service) UpdateInfo(params *UpdateInfoRequest) *errcode.Error {
+	user, ok := svc.dao.FindUserByID(params.ID)
+	if !ok {
+		return errcode.NotFound
+	}
+	if params.Nickname != "" {
+		user.UpdateNickName(params.Nickname)
+	}
+	if params.Tele != "" {
+		user.UpdateTele(params.Tele)
+	}
+	if params.HeadImage != "" {
+		user.UpdateHeadImage(params.HeadImage)
+	}
+	err := svc.dao.UpdateUserInfo(user)
+	if err != nil {
+		return errcode.MySQLErr
+	}
+	return errcode.Success
+}
+func (svc *Service) GetUserInfo(params *DetailRequest) (swagger.DetailData, *errcode.Error) {
+	user, ok := svc.dao.FindUserByID(params.ID)
+	if !ok {
+		return swagger.DetailData{}, errcode.NotFound
+	}
+	data := swagger.DetailData{
+		ID:        user.ID,
+		NickName:  user.NickName,
+		HeadImage: user.HeadImage,
+		Level:     user.Level,
+	}
+	if params.Self {
+		data.Points = user.Points
+		data.Tele = user.Tele
+	}
+	return data, errcode.Success
 }

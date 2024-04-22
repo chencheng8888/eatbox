@@ -1,6 +1,6 @@
 package swagger
 
 type Fail struct {
-	Code string `json:"code"`
+	Code int    `json:"code"`
 	Msg  string `json:"msg"`
 }

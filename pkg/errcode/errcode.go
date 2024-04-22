@@ -62,6 +62,8 @@ func (e *Error) StatusCode() int {
 		return http.StatusInternalServerError
 	case MySQLErr.Code():
 		return http.StatusInternalServerError
+	case WXAPIError.Code():
+		return http.StatusInternalServerError
 	case ServerError.Code():
 		return http.StatusInternalServerError
 	case InvalidParams.Code():

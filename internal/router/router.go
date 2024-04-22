@@ -19,6 +19,7 @@ func NewRouter() *gin.Engine {
 	{
 		user := NewUser()
 		UserGroup.POST("/login", user.Login)
+		UserGroup.PUT("/update", user.UpdateUserInfo)
 	}
 	return r
 }
