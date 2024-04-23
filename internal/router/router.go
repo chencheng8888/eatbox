@@ -10,16 +10,22 @@ func NewRouter() *gin.Engine {
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
 	r.Use(middleware.Translations())
+	r.GET("/ping", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"message": "pong",
+		})
+	})
 	QiniuGroup := r.Group("/qiniu")
 	{
 		qn := NewQiniu()
-		QiniuGroup.GET("/get_token", qn.SendQNToken)
+		QiniuGroup.GET("/get_token", middleware.JWTAuthMiddleware(), qn.SendQNToken)
 	}
 	UserGroup := r.Group("/api/user")
 	{
 		user := NewUser()
 		UserGroup.POST("/login", user.Login)
-		UserGroup.PUT("/update", user.UpdateUserInfo)
+		UserGroup.PUT("/update", middleware.JWTAuthMiddleware(), user.UpdateUserInfo)
+		UserGroup.GET("/getinfo", middleware.JWTAuthMiddleware(), user.GetUserInfo)
 	}
 	return r
 }

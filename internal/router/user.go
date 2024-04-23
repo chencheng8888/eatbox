@@ -47,6 +47,7 @@ func (u User) Login(c *gin.Context) {
 
 // UpdateUserInfo
 // @Summary 更新个人信息
+// @Description 这几个参数你可以根据情况来传,不一定非要以forData的形式来传，你也可以传query，根据情况来传就好
 // @Produce json
 // @Param nickname formData string false "昵称"
 // @Param tele formData string false "电话号码"
@@ -84,12 +85,12 @@ func (u User) UpdateUserInfo(c *gin.Context) {
 // @Description 这个ID不是必须的，也就是说，如果你不填默认就是查自己的。而是不是自己的，返回的信息也有差别
 // @Produce json
 // @Param id query string false "用户ID"
-// @Success 200 {object} swagger.UpdateSwagger "成功"
+// @Success 200 {object} swagger.DetailSwagger "成功"
 // @Failure 400 {object} swagger.Fail "入参错误"
 // @Failure 500 {object} swagger.Fail "服务端出现错误"
 // @Failure 204 {object} swagger.Fail "登录状态有误"
 // @Failure 401 {object} swagger.Fail "鉴权失败"
-// @Router /api/user/update [put]
+// @Router /api/user/getinfo [get]
 func (u User) GetUserInfo(c *gin.Context) {
 	param := service.DetailRequest{}
 	valid, errs := app.BindAndValid(c, &param)

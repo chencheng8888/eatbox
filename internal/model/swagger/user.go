@@ -14,12 +14,12 @@ type UpdateSwagger struct {
 	Msg  string `json:"msg"`
 }
 type DetailData struct {
-	ID        string `json:"id"`
-	NickName  string `json:"nick_name"`
-	HeadImage string `json:"head_image"`
-	Points    int    `json:"points"`
-	Level     int    `json:"level"`
-	Tele      string `json:"tele"`
+	ID        string `json:"id"`         //id
+	NickName  string `json:"nick_name"`  //昵称
+	HeadImage string `json:"head_image"` //头像
+	Points    int    `json:"points"`     //积分
+	Level     int    `json:"level"`      //等级
+	Tele      string `json:"tele"`       //电话
 }
 type DetailSwagger struct {
 	Code int        `json:"code"`

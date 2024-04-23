@@ -1,6 +1,7 @@
 package setting
 
 import (
+	"eat_box/internal/model"
 	"fmt"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -33,7 +34,7 @@ func NewDBEngine(databasesetting *MysqlSettings) (*gorm.DB, error) {
 	}
 
 	//自动迁移
-	err = db.AutoMigrate()
+	err = db.AutoMigrate(&model.User{})
 
 	if err != nil {
 		return nil, err

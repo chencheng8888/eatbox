@@ -15,12 +15,12 @@ type LoginRequest struct {
 }
 type UpdateInfoRequest struct {
 	ID        string
-	Nickname  string `form:"nickname" binding:"min=1,max=30"`
-	Tele      string `form:"tele" binding:"len=11"`
-	HeadImage string `form:"headimage" binding:"url"`
+	Nickname  string `form:"nickname" binding:"omitempty,min=1,max=30"`
+	Tele      string `form:"tele" binding:"omitempty,len=11"`
+	HeadImage string `form:"headimage" binding:"omitempty,url"`
 }
 type DetailRequest struct {
-	ID   string `form:"id" binding:"len=10"`
+	ID   string `form:"id" binding:"omitempty,len=10"`
 	Self bool
 }
 type WXLoginResp struct {
@@ -31,27 +31,26 @@ type WXLoginResp struct {
 	ErrMsg     string `json:"errmsg"`
 }
 
-func (svc *Service) WXLogin(code string) (*WXLoginResp, *errcode.Error) {
-	url := "https://api.weixin.qq.com/sns/jscode2session?appid=%s&secret=%s&js_code=%s&grant_type=authorization_code"
+func (svc *Service) WXLogin(code string) (WXLoginResp, *errcode.Error) {
 	// 合成url, 这里的appId和secret是在微信公众平台上获取的
-	url = fmt.Sprintf(url, global.WechatSetting.AppID, global.WechatSetting.AppSecret, code)
+	url := fmt.Sprintf("https://api.weixin.qq.com/sns/jscode2session?appid=%s&secret=%s&js_code=%s&grant_type=authorization_code", global.WechatSetting.AppID, global.WechatSetting.AppSecret, code)
 	// 创建http get请求
 	resp, err := http.Get(url)
 	if err != nil {
-		return nil, errcode.ServerError
+		return WXLoginResp{}, errcode.ServerError
 	}
 	defer resp.Body.Close()
 	// 解析http请求中body 数据到我们定义的结构体中
 	wxResp := WXLoginResp{}
 	decoder := json.NewDecoder(resp.Body)
 	if err := decoder.Decode(&wxResp); err != nil {
-		return nil, errcode.JSONUnmarshalError
+		return WXLoginResp{}, errcode.JSONUnmarshalError
 	}
 	// 判断微信接口返回的是否是一个异常情况
 	if wxResp.ErrCode != 0 {
-		return nil, errcode.WXAPIError
+		return WXLoginResp{}, errcode.WXAPIError
 	}
-	return &wxResp, errcode.Success
+	return wxResp, errcode.Success
 }
 func (svc *Service) Login(params *LoginRequest) (bool, string, *errcode.Error) {
 	first := false
@@ -85,6 +84,11 @@ func (svc *Service) UpdateInfo(params *UpdateInfoRequest) *errcode.Error {
 	if params.HeadImage != "" {
 		user.UpdateHeadImage(params.HeadImage)
 	}
+	_, err1 := svc.cache.GetUserFromCache(params.ID)
+	if err1.Code() == errcode.Success.Code() {
+		err2 := svc.cache.DeleteOneUser(params.ID)
+		fmt.Println(err2)
+	}
 	err := svc.dao.UpdateUserInfo(user)
 	if err != nil {
 		return errcode.MySQLErr
@@ -92,9 +96,22 @@ func (svc *Service) UpdateInfo(params *UpdateInfoRequest) *errcode.Error {
 	return errcode.Success
 }
 func (svc *Service) GetUserInfo(params *DetailRequest) (swagger.DetailData, *errcode.Error) {
-	user, ok := svc.dao.FindUserByID(params.ID)
-	if !ok {
-		return swagger.DetailData{}, errcode.NotFound
+	//user := model.NewUser()
+	var ok bool
+	user, err := svc.cache.GetUserFromCache(params.ID)
+	//如果失败，就从数据库中获取user
+	if err.Code() != errcode.Success.Code() {
+		user, ok = svc.dao.FindUserByID(params.ID)
+		if !ok {
+			return swagger.DetailData{}, errcode.NotFound
+		}
+	}
+	//如果缓存中没有就设置一个
+	if err.Code() == errcode.NotFound.Code() {
+		err = svc.cache.SetOneUser(user)
+		if err.Code() != errcode.Success.Code() {
+			fmt.Println(err)
+		}
 	}
 	data := swagger.DetailData{
 		ID:        user.ID,

@@ -12,8 +12,8 @@ type RedisSettingS struct {
 	Password string `json:"password"`
 }
 type WechatSettings struct {
-	AppID     string `json:"appid"`
-	AppSecret string `json:"appsecret"`
+	AppID     string `json:"Appid"`
+	AppSecret string `json:"Appsecret"`
 }
 type QiniuSettingS struct {
 	AccessKey string `json:"AccessKey"`
