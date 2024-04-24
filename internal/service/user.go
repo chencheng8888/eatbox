@@ -23,6 +23,9 @@ type DetailRequest struct {
 	ID   string `form:"id" binding:"omitempty,len=10"`
 	Self bool
 }
+type GetBusinessesRequest struct {
+	Page int `form:"page" binding:"required,number,gte=1"`
+}
 type WXLoginResp struct {
 	OpenId     string `json:"openid"`
 	SessionKey string `json:"session_key"`
@@ -122,6 +125,42 @@ func (svc *Service) GetUserInfo(params *DetailRequest) (swagger.DetailData, *err
 	if params.Self {
 		data.Points = user.Points
 		data.Tele = user.Tele
+	}
+	return data, errcode.Success
+}
+func (svc *Service) GetBusinesses(params *GetBusinessesRequest) (swagger.BusinessData, *errcode.Error) {
+	var Maxpage int
+	var data swagger.BusinessData
+	var err1 *errcode.Error
+	total := svc.dao.GetBusinessNum()
+	if total%global.Pagesize == 0 {
+		Maxpage = int(total) / global.Pagesize
+	} else {
+		Maxpage = int(total)/global.Pagesize + 1
+	}
+	if params.Page > Maxpage {
+		return swagger.BusinessData{}, errcode.PageInvalid
+	}
+	data, err1 = svc.cache.GetBusinessData(int64(params.Page))
+	if err1.Code() == errcode.Success.Code() {
+		return data, errcode.Success
+	}
+	limit := global.Pagesize
+	offset := (params.Page - 1) * limit
+	businesses, err := svc.dao.GetBusinesses(limit, offset)
+	if err != nil {
+		return swagger.BusinessData{}, errcode.MySQLErr
+	}
+	data = swagger.BusinessData{
+		Total:       total,
+		Businesses:  businesses,
+		CurrentPage: int64(params.Page),
+		PageSize:    int64(global.Pagesize),
+	}
+	err1 = svc.cache.SetBusinessData(data)
+	if err1.Code() != errcode.Success.Code() {
+		fmt.Println("set businesslist err")
+		fmt.Println(err)
 	}
 	return data, errcode.Success
 }

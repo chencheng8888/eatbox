@@ -17,5 +17,6 @@ var (
 	ErrRedisSet               = NewError(100000012, "redis设置key-value失败")
 	JSONUnmarshalError        = NewError(100000013, "JSON unmarshal error")
 	ErrRedisDel               = NewError(100000014, "redis删除key-val失败")
-	WXAPIError                = NewError(100000015, "微信api调用错误")
+	WXAPIError                = NewError(100000015, "微信api调用错误或者code已过期")
+	PageInvalid               = NewError(100000016, "页码超限")
 )

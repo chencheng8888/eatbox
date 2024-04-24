@@ -26,6 +26,7 @@ func NewRouter() *gin.Engine {
 		UserGroup.POST("/login", user.Login)
 		UserGroup.PUT("/update", middleware.JWTAuthMiddleware(), user.UpdateUserInfo)
 		UserGroup.GET("/getinfo", middleware.JWTAuthMiddleware(), user.GetUserInfo)
+		UserGroup.GET("/getbusinesslist", middleware.JWTAuthMiddleware(), user.GetBusinessList)
 	}
 	return r
 }

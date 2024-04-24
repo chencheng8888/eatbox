@@ -16,7 +16,8 @@ func NewUser() User {
 	return User{}
 }
 
-// Login @Summary 登录
+// Login
+// @Summary 登录
 // @Produce json
 // @Param code query string true "code"
 // @Success 200 {object} swagger.LoginSwagger "成功"
@@ -111,6 +112,36 @@ func (u User) GetUserInfo(c *gin.Context) {
 	}
 	svc := service.NewService()
 	data, err := svc.GetUserInfo(&param)
+	if err.Code() != errcode.Success.Code() {
+		response.Newresponse(err.Code(), err.Msg()).SendResponse(c, err)
+		return
+	}
+	response.OK.WithData(data).SendResponse(c, errcode.Success)
+}
+
+// GetBusinessList
+// @Summary 获取商家列表
+// @Produce json
+// @Param page query string true "页码"
+// @Success 200 {object} swagger.BusinessListSwagger "成功"
+// @Failure 400 {object} swagger.Fail "入参错误或者页码超限"
+// @Failure 500 {object} swagger.Fail "服务端出现错误"
+// @Failure 204 {object} swagger.Fail "登录状态有误"
+// @Failure 401 {object} swagger.Fail "鉴权失败"
+// @Router /api/user/getbusinesslist [get]
+func (u User) GetBusinessList(c *gin.Context) {
+	param := service.GetBusinessesRequest{}
+	valid, errs := app.BindAndValid(c, &param)
+	if valid {
+		fmt.Println(errs) //模拟日志打印
+
+		response.Newresponse(
+			errcode.InvalidParams.Code(),
+			errcode.InvalidParams.Msg()).SendResponse(c, errcode.InvalidParams)
+		return
+	}
+	svc := service.NewService()
+	data, err := svc.GetBusinesses(&param)
 	if err.Code() != errcode.Success.Code() {
 		response.Newresponse(err.Code(), err.Msg()).SendResponse(c, err)
 		return

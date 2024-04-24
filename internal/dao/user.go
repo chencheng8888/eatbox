@@ -38,3 +38,14 @@ func (d *Dao) FindUserByOpenID(openid string) (model.User, bool) {
 func (d *Dao) UpdateUserInfo(user model.User) error {
 	return d.engine.Updates(&user).Error
 }
+
+func (d *Dao) GetBusinessNum() int64 {
+	var num int64
+	d.engine.Model(&model.Business{}).Count(&num)
+	return num
+}
+func (d *Dao) GetBusinesses(limit int, offset int) ([]model.Business, error) {
+	var busses []model.Business
+	err := d.engine.Model(&model.Business{}).Limit(limit).Offset(offset).Find(&busses).Error
+	return busses, err
+}
