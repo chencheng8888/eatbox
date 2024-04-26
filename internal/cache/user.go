@@ -15,13 +15,18 @@ func GetUserCacheName(id string) string {
 	return "user" + id
 }
 func (cache *Cache) SetOneUser(user model.User) *errcode.Error {
+
 	key := GetUserCacheName(user.ID)
 	content, err := json.Marshal(&user)
 	if err != nil {
 		return errcode.ToJSONError
 	}
-	errset := cache.redisdb.Set(key, content, UserDetailDuration).Err()
-	if errset != nil {
+	_, err = cache.redisdb.Exists(key).Result()
+	if err != nil {
+		return errcode.ErrRedisGet
+	}
+	err = cache.redisdb.Set(key, content, UserDetailDuration).Err()
+	if err != nil {
 		return errcode.ErrRedisSet
 	}
 	return errcode.Success
@@ -42,7 +47,15 @@ func (cache *Cache) GetUserFromCache(id string) (model.User, *errcode.Error) {
 }
 func (cache *Cache) DeleteOneUser(id string) *errcode.Error {
 	key := GetUserCacheName(id)
-	err := cache.redisdb.Del(key).Err()
+	// 检查键是否存在
+	_, err := cache.redisdb.Exists(key).Result()
+	if err != nil {
+		return errcode.ErrRedisGet
+	}
+
+	// 如果键存在，则执行删除操作
+
+	err = cache.redisdb.Del(key).Err()
 	if err != nil {
 		return errcode.ErrRedisDel
 	}

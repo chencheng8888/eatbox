@@ -19,4 +19,5 @@ var (
 	ErrRedisDel               = NewError(100000014, "redis删除key-val失败")
 	WXAPIError                = NewError(100000015, "微信api调用错误或者code已过期")
 	PageInvalid               = NewError(100000016, "页码超限")
+	ErrRedisGet               = NewError(100000017, "redis获取键失败")
 )

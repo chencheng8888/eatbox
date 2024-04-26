@@ -35,14 +35,28 @@ type WXLoginResp struct {
 }
 
 func (svc *Service) WXLogin(code string) (WXLoginResp, *errcode.Error) {
-	// 合成url, 这里的appId和secret是在微信公众平台上获取的
-	url := fmt.Sprintf("https://api.weixin.qq.com/sns/jscode2session?appid=%s&secret=%s&js_code=%s&grant_type=authorization_code", global.WechatSetting.AppID, global.WechatSetting.AppSecret, code)
-	// 创建http get请求
-	resp, err := http.Get(url)
-	if err != nil {
-		return WXLoginResp{}, errcode.ServerError
+	//var datachan = make(chan WXLoginResp)
+	var respchan = make(chan *http.Response)
+	var errchan = make(chan *errcode.Error)
+	go func() {
+		// 合成url, 这里的appId和secret是在微信公众平台上获取的
+		url := fmt.Sprintf("https://api.weixin.qq.com/sns/jscode2session?appid=%s&secret=%s&js_code=%s&grant_type=authorization_code", global.WechatSetting.AppID, global.WechatSetting.AppSecret, code)
+		// 创建http get请求
+		resp, err := http.Get(url)
+		defer resp.Body.Close()
+		if err != nil {
+			errchan <- errcode.ServerError
+			return
+			//return WXLoginResp{}, errcode.ServerError
+		}
+		errchan <- errcode.Success
+		respchan <- resp
+	}()
+	err := <-errchan
+	if err.Code() != errcode.Success.Code() {
+		return WXLoginResp{}, err
 	}
-	defer resp.Body.Close()
+	resp := <-respchan
 	// 解析http请求中body 数据到我们定义的结构体中
 	wxResp := WXLoginResp{}
 	decoder := json.NewDecoder(resp.Body)
@@ -110,12 +124,15 @@ func (svc *Service) GetUserInfo(params *DetailRequest) (swagger.DetailData, *err
 		}
 	}
 	//如果缓存中没有就设置一个
-	if err.Code() == errcode.NotFound.Code() {
-		err = svc.cache.SetOneUser(user)
-		if err.Code() != errcode.Success.Code() {
-			fmt.Println(err)
+	go func() {
+		if err.Code() == errcode.NotFound.Code() {
+			err = svc.cache.SetOneUser(user)
+			if err.Code() != errcode.Success.Code() {
+				fmt.Println(err)
+			}
 		}
-	}
+	}()
+
 	data := swagger.DetailData{
 		ID:        user.ID,
 		NickName:  user.NickName,
@@ -157,10 +174,13 @@ func (svc *Service) GetBusinesses(params *GetBusinessesRequest) (swagger.Busines
 		CurrentPage: int64(params.Page),
 		PageSize:    int64(global.Pagesize),
 	}
-	err1 = svc.cache.SetBusinessData(data)
-	if err1.Code() != errcode.Success.Code() {
-		fmt.Println("set businesslist err")
-		fmt.Println(err)
-	}
+	go func() {
+		err1 := svc.cache.SetBusinessData(data)
+		if err1.Code() != errcode.Success.Code() {
+			fmt.Println("set businesslist err")
+			fmt.Println(err1)
+		}
+	}()
+
 	return data, errcode.Success
 }
