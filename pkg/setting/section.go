@@ -21,6 +21,9 @@ type QiniuSettingS struct {
 	Bucket    string `json:"Bucket"`
 	Domain    string `json:"Domain"`
 }
+type KafkaSettings struct {
+	Addr string `json:"addr"`
+}
 
 func (s *Setting) ReadSection(k string, v interface{}) error {
 	err := s.vp.UnmarshalKey(k, v)

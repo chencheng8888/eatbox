@@ -27,6 +27,17 @@ func NewRouter() *gin.Engine {
 		UserGroup.PUT("/update", middleware.JWTAuthMiddleware(), user.UpdateUserInfo)
 		UserGroup.GET("/getinfo", middleware.JWTAuthMiddleware(), user.GetUserInfo)
 		UserGroup.GET("/getbusinesslist", middleware.JWTAuthMiddleware(), user.GetBusinessList)
+		UserGroup.PUT("/score", middleware.JWTAuthMiddleware(), user.Score)
+	}
+	BusinessGroup := r.Group("/api/business")
+	{
+		b := NewBusiness()
+		BusinessGroup.POST("/create", middleware.JWTAuthMiddleware(), b.Create)
+	}
+	OrderGroup := r.Group("/api/order")
+	{
+		order := NewOrder()
+		OrderGroup.POST("/new", middleware.JWTAuthMiddleware(), order.Create)
 	}
 	return r
 }

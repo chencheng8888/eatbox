@@ -4,31 +4,37 @@ import "gorm.io/gorm"
 
 type BlindBox struct {
 	gorm.Model
-	BlindType       int    `json:"type"`
-	Sale            int    `json:"sale" gorm:"default:0"`
-	Number          int    `json:"number" gorm:"default:0"`
-	Original        string `json:"original"`
-	Discount        int    `json:"discount" gorm:"default:0"`
-	CarbonReduction int    `json:"carbon_reduction"`
-	Image           string `json:"image"`
-	Status          int    `json:"status" gorm:"default:0"`
+	BlindType       int    `json:"type" gorm:"column:blind_type"`
+	Sale            int    `json:"sale" gorm:"default:0;column:sale"`
+	Number          int    `json:"number" gorm:"default:0;column:number"`
+	Original        string `json:"original" gorm:"column:original"`
+	Discount        int    `json:"discount" gorm:"default:0" gorm:"column:discount"`
+	CarbonReduction int    `json:"carbon_reduction" gorm:"column:carbon_reduction"`
+	Image           string `json:"image" gorm:"column:image"`
+	Status          int    `json:"status" gorm:"default:0" gorm:"column:status"`
 }
 type Business struct {
 	//ID           int     `gorm:"primaryKey" json:"id"`
 	gorm.Model
-	Name         string  `json:"name"`
-	Avatar       string  `json:"avatar"`
-	Address      string  `json:"address"`
-	Openinghours string  `json:"openinghours"`
-	Description  string  `json:"description"`
-	Image        string  `json:"image"`
-	Score        float64 `json:"score"`
-	Tele         string  `json:"tele"`
+	ManagerID    string  `json:"manager_id" gorm:"column:manager_id"`
+	Name         string  `json:"name" gorm:"column:name"`
+	Avatar       string  `json:"avatar" gorm:"column:avatar"`
+	Address      string  `json:"address" gorm:"column:address"`
+	Openinghours string  `json:"opening_hours" gorm:"column:opening_hours"`
+	Description  string  `json:"description" gorm:"column:description"`
+	Image        string  `json:"image" gorm:"column:image"`
+	Score        float64 `json:"score" gorm:"column:score"`
+	Tele         string  `json:"tele" gorm:"column:tele"`
+}
+type BusinessScore struct {
+	ID        int     `json:"id" gorm:"primaryKey;column:id"`
+	ScoreNum  float64 `json:"score_num" gorm:"column:score_num"`
+	PeopleNum int     `json:"people_num" gorm:"column:people_num"`
 }
 type BusinessAndBox struct {
 	gorm.Model
-	BusinessID int `json:"business_id"`
-	BoxID      int `json:"box_id"`
+	BusinessID int `json:"business_id" gorm:"column:business_id"`
+	BoxID      int `json:"box_id" gorm:"column:box_id"`
 }
 
 func NewBlindBox() BlindBox {

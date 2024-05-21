@@ -7,6 +7,7 @@ import (
 	"eat_box/pkg/errcode"
 	"encoding/json"
 	"fmt"
+	"github.com/IBM/sarama"
 	"net/http"
 )
 
@@ -25,6 +26,10 @@ type DetailRequest struct {
 }
 type GetBusinessesRequest struct {
 	Page int `form:"page" binding:"required,number,gte=1"`
+}
+type ScoreRequest struct {
+	BusinessID int     `form:"business_id" binding:"required,number"`
+	Score      float64 `form:"score" binding:"required,gte=0,lte=10"`
 }
 type WXLoginResp struct {
 	OpenId     string `json:"openid"`
@@ -88,25 +93,26 @@ func (svc *Service) Login(params *LoginRequest) (bool, string, *errcode.Error) {
 	return first, token, errcode.Success
 }
 func (svc *Service) UpdateInfo(params *UpdateInfoRequest) *errcode.Error {
-	user, ok := svc.dao.FindUserByID(params.ID)
+	_, ok := svc.dao.FindUserByID(params.ID)
+	mp := make(map[string]interface{})
 	if !ok {
 		return errcode.NotFound
 	}
 	if params.Nickname != "" {
-		user.UpdateNickName(params.Nickname)
+		mp["nick_name"] = params.Nickname
 	}
 	if params.Tele != "" {
-		user.UpdateTele(params.Tele)
+		mp["tele"] = params.Tele
 	}
 	if params.HeadImage != "" {
-		user.UpdateHeadImage(params.HeadImage)
+		mp["head_image"] = params.HeadImage
 	}
 	_, err1 := svc.cache.GetUserFromCache(params.ID)
 	if err1.Code() == errcode.Success.Code() {
 		err2 := svc.cache.DeleteOneUser(params.ID)
 		fmt.Println(err2)
 	}
-	err := svc.dao.UpdateUserInfo(user)
+	err := svc.dao.UpdateUserInfo(params.ID, mp)
 	if err != nil {
 		return errcode.MySQLErr
 	}
@@ -148,6 +154,8 @@ func (svc *Service) GetUserInfo(params *DetailRequest) (swagger.DetailData, *err
 func (svc *Service) GetBusinesses(params *GetBusinessesRequest) (swagger.BusinessData, *errcode.Error) {
 	var Maxpage int
 	var data swagger.BusinessData
+
+	//先看page是否合法
 	var err1 *errcode.Error
 	total := svc.dao.GetBusinessNum()
 	if total%global.Pagesize == 0 {
@@ -158,6 +166,7 @@ func (svc *Service) GetBusinesses(params *GetBusinessesRequest) (swagger.Busines
 	if params.Page > Maxpage {
 		return swagger.BusinessData{}, errcode.PageInvalid
 	}
+	//先从缓存中获取
 	data, err1 = svc.cache.GetBusinessData(int64(params.Page))
 	if err1.Code() == errcode.Success.Code() {
 		return data, errcode.Success
@@ -174,6 +183,8 @@ func (svc *Service) GetBusinesses(params *GetBusinessesRequest) (swagger.Busines
 		CurrentPage: int64(params.Page),
 		PageSize:    int64(global.Pagesize),
 	}
+
+	//开个协程来设置缓存
 	go func() {
 		err1 := svc.cache.SetBusinessData(data)
 		if err1.Code() != errcode.Success.Code() {
@@ -183,4 +194,17 @@ func (svc *Service) GetBusinesses(params *GetBusinessesRequest) (swagger.Busines
 	}()
 
 	return data, errcode.Success
+}
+func (svc *Service) Score(params *ScoreRequest) *errcode.Error {
+	data := swagger.ScoreData{
+		BusinessID: params.BusinessID,
+		Score:      params.Score,
+	}
+	//向kafka发送消息
+	content, err := json.Marshal(&data)
+	if err != nil {
+		return errcode.ToJSONError
+	}
+	msg := &sarama.ProducerMessage{Topic: "score", Value: sarama.StringEncoder(content), Partition: 0}
+	return svc.producer.SendMsg(msg)
 }

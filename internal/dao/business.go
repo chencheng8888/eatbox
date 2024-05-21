@@ -1,53 +1,70 @@
 package dao
 
-import "eat_box/internal/model"
+import (
+	"eat_box/internal/model"
+	"eat_box/internal/model/swagger"
+)
 
-func (d *Dao) CreateBox(box model.BlindBox) error {
-	return d.engine.Create(&box).Error
+// CreateBusiness 创建商家
+func (d *Dao) CreateBusiness(b model.Business) error {
+	tx := d.engine.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+	err := tx.Create(&b).Error
+	if err != nil {
+		tx.Rollback()
+	}
+	score := model.BusinessScore{
+		ID:        int(b.ID),
+		ScoreNum:  0,
+		PeopleNum: 0,
+	}
+	err = tx.Create(&score).Error
+	if err != nil {
+		tx.Rollback()
+	}
+	return tx.Commit().Error
 }
-func (d *Dao) UpdateBox(box model.BlindBox) error {
-	return d.engine.Updates(&box).Error
-}
-func (d *Dao) DeleteBox(box model.BlindBox) error {
-	return d.engine.Delete(&box).Error
-}
-func (d *Dao) GetBox(id int) (model.BlindBox, error) {
-	box := model.NewBlindBox()
-	err := d.engine.First(&box, id).Error
-	return box, err
-}
-func (d *Dao) CreateBusiness(Business model.Business) error {
-	return d.engine.Create(&Business).Error
-}
-func (d *Dao) UpdateBusiness(Business model.Business) error {
-	return d.engine.Updates(&Business).Error
-}
-func (d *Dao) DeleteBusiness(Business model.Business) error {
-	return d.engine.Delete(&Business).Error
-}
-func (d *Dao) GetBusiness(id int) (model.Business, error) {
-	Business := model.NewBusiness()
-	err := d.engine.First(&Business, id).Error
-	return Business, err
-}
-func (d *Dao) CreateBusinessAndBox(Business model.Business) error {
-	return d.engine.Create(&Business).Error
-}
-func (d *Dao) DeleteBusinessAndBox(Business model.Business) error {
-	return d.engine.Delete(&Business).Error
-}
-func (d *Dao) FindBusinessAndBoxByID(id int) (model.BusinessAndBox, error) {
-	BusinessAndBox := model.NewBusinessAndBox()
-	err := d.engine.First(&BusinessAndBox, id).Error
-	return BusinessAndBox, err
-}
-func (d *Dao) FindBusinessAndBoxByBusID(id int) ([]model.BusinessAndBox, error) {
-	var b []model.BusinessAndBox
-	err := d.engine.Where(&model.BusinessAndBox{BusinessID: id}).Find(&b).Error
-	return b, err
-}
-func (d *Dao) FindBusinessAndBoxByBoxID(id int) ([]model.BusinessAndBox, error) {
-	var b []model.BusinessAndBox
-	err := d.engine.Where(&model.BusinessAndBox{BoxID: id}).Find(&b).Error
-	return b, err
+
+// UpdateBusinessesScore 更新商家的评分
+func (d *Dao) UpdateBusinessesScore(datas []swagger.ScoreData) error {
+	tx := d.engine.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+	tx.SavePoint("test1")
+	for _, data := range datas {
+		var business model.Business
+		var businessScore model.BusinessScore
+		mp1 := make(map[string]interface{})
+		mp2 := make(map[string]interface{})
+		err := tx.First(&business, data.BusinessID).Error
+		if err != nil {
+			tx.RollbackTo("test1")
+		}
+		err = tx.First(&businessScore, data.BusinessID).Error
+		if err != nil {
+			tx.RollbackTo("test1")
+		}
+		//businessScore.ScoreNum += data.Score
+		mp1["score_num"] = businessScore.ScoreNum + data.Score
+		//businessScore.PeopleNum++
+		mp1["people_num"] = businessScore.PeopleNum + 1
+		//business.Score = businessScore.ScoreNum / float64(businessScore.PeopleNum)
+		mp2["score"] = (businessScore.ScoreNum + data.Score) / float64(businessScore.PeopleNum+1)
+		err = tx.Model(&model.BusinessScore{}).Where("id = ?", data.BusinessID).Updates(mp1).Error
+		if err != nil {
+			tx.RollbackTo("test1")
+		}
+		err = tx.Model(&model.Business{}).Where("id = ?", data.BusinessID).Updates(mp2).Error
+		if err != nil {
+			tx.RollbackTo("test1")
+		}
+	}
+	return tx.Commit().Error
 }

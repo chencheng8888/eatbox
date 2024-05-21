@@ -35,8 +35,8 @@ func (d *Dao) FindUserByOpenID(openid string) (model.User, bool) {
 	}
 	return user, true
 }
-func (d *Dao) UpdateUserInfo(user model.User) error {
-	return d.engine.Updates(&user).Error
+func (d *Dao) UpdateUserInfo(id string, mp map[string]interface{}) error {
+	return d.engine.Model(&model.User{}).Where("id = ?", id).Updates(mp).Error
 }
 
 func (d *Dao) GetBusinessNum() int64 {

@@ -10,6 +10,7 @@ var (
 	RedisSetting  *setting.RedisSettingS
 	WechatSetting *setting.WechatSettings
 	QiNiuSetting  *setting.QiniuSettingS
+	KafkaSetting  *setting.KafkaSettings
 	//JWTSetting   *setting.Jwtsettings
 )
 

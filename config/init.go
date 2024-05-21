@@ -4,6 +4,7 @@ import (
 	"eat_box/global"
 	"eat_box/pkg/setting"
 	"errors"
+	"github.com/IBM/sarama"
 	"github.com/go-redis/redis"
 )
 
@@ -27,6 +28,15 @@ func Initredis() error {
 	}
 	return nil
 }
+func InitKafka() error {
+	global.KafkaConfig = sarama.NewConfig()
+	global.KafkaConfig.Producer.Partitioner = sarama.NewRandomPartitioner // 新选出一个partition
+	global.KafkaConfig.Producer.Return.Successes = true                   // 成功交付的消息将在success channel返回
+	global.KafkaConfig.Consumer.Return.Errors = true
+	global.KafkaConfig.Consumer.Fetch.Max = 20 // 设置一次获取消息的最大数量
+	global.KafkaConfig.Producer.RequiredAcks = sarama.NoResponse
+	return nil
+}
 func SetupSetting() error {
 	set, err := setting.NewSetting()
 	if err != nil {
@@ -48,6 +58,10 @@ func SetupSetting() error {
 	if err != nil {
 		return err
 	}
+	err = set.ReadSection("kafka", &global.KafkaSetting)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 func Init() error {
@@ -65,6 +79,11 @@ func Init() error {
 	err = Initredis()
 	if err != nil {
 		return errors.New("初始化redis失败")
+	}
+	//初始化kafka
+	err = InitKafka()
+	if err != nil {
+		return errors.New("初始化kafka失败")
 	}
 	return nil
 }

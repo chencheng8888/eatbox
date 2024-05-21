@@ -16,6 +16,11 @@ func (cache *Cache) SetBusinessData(data swagger.BusinessData) *errcode.Error {
 	if err != nil {
 		return errcode.ToJSONError
 	}
+	//先检验是否存在
+	_, err = cache.redisdb.Exists(key).Result()
+	if err != nil {
+		return errcode.ErrRedisGet
+	}
 	errset := cache.redisdb.Set(key, content, Expire).Err()
 	if errset != nil {
 		return errcode.ErrRedisSet
@@ -38,13 +43,17 @@ func (cache *Cache) GetBusinessData(page int64) (swagger.BusinessData, *errcode.
 }
 func (cache *Cache) DeleteBusinessData(page int64) *errcode.Error {
 	key := GetBusinessListKey(page)
-	err := cache.redisdb.Del(key).Err()
+	_, err := cache.redisdb.Exists(key).Result()
+	if err != nil {
+		return errcode.ErrRedisGet
+	}
+	err = cache.redisdb.Del(key).Err()
 	if err != nil {
 		return errcode.ErrRedisDel
 	}
 	return errcode.Success
 }
 func GetBusinessListKey(page int64) string {
-	key := fmt.Sprintf("BuinessList_page:%d", page)
+	key := fmt.Sprintf("BusinessList_page:%d", page)
 	return key
 }

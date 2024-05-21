@@ -34,7 +34,9 @@ func NewDBEngine(databasesetting *MysqlSettings) (*gorm.DB, error) {
 	}
 
 	//自动迁移
-	err = db.AutoMigrate(&model.User{})
+	err = db.AutoMigrate(&model.User{},
+		&model.Business{},
+		&model.BusinessScore{})
 
 	if err != nil {
 		return nil, err

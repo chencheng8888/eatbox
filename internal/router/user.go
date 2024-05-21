@@ -130,6 +130,7 @@ func (u User) GetUserInfo(c *gin.Context) {
 // @Failure 401 {object} swagger.Fail "鉴权失败"
 // @Router /api/user/getbusinesslist [get]
 func (u User) GetBusinessList(c *gin.Context) {
+	//参数获取和检验
 	param := service.GetBusinessesRequest{}
 	valid, errs := app.BindAndValid(c, &param)
 	if valid {
@@ -140,6 +141,7 @@ func (u User) GetBusinessList(c *gin.Context) {
 			errcode.InvalidParams.Msg()).SendResponse(c, errcode.InvalidParams)
 		return
 	}
+	//接口主体
 	svc := service.NewService()
 	data, err := svc.GetBusinesses(&param)
 	if err.Code() != errcode.Success.Code() {
@@ -147,4 +149,40 @@ func (u User) GetBusinessList(c *gin.Context) {
 		return
 	}
 	response.OK.WithData(data).SendResponse(c, errcode.Success)
+}
+
+// Score 给商家打分
+// @Summary 给商家打分
+// @Produce json
+// @Param business_id query int true "商家ID"
+// @Param score query float64 true "评分"
+// @Success 200 {object} swagger.BusinessListSwagger "成功"
+// @Failure 400 {object} swagger.Fail "入参错误或者页码超限"
+// @Failure 500 {object} swagger.Fail "服务端出现错误"
+// @Failure 204 {object} swagger.Fail "登录状态有误"
+// @Failure 401 {object} swagger.Fail "鉴权失败"
+// @Router /api/user/score [put]
+func (u User) Score(c *gin.Context) {
+	//参数获取和检验
+	param := service.ScoreRequest{}
+	valid, errs := app.BindAndValid(c, &param)
+	if valid {
+		fmt.Println(errs) //模拟日志打印
+
+		response.Newresponse(
+			errcode.InvalidParams.Code(),
+			errcode.InvalidParams.Msg()).SendResponse(c, errcode.InvalidParams)
+		return
+	}
+	//接口主体
+	svc := service.NewService()
+	err := svc.Score(&param)
+
+	//处理错误以及响应
+	if err.Code() != errcode.Success.Code() {
+		response.Newresponse(err.Code(), err.Msg()).SendResponse(c, err)
+		return
+	}
+	response.OK.SendResponse(c, errcode.Success)
+
 }

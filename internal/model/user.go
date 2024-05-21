@@ -1,13 +1,13 @@
 package model
 
 type User struct {
-	ID        string `gorm:"primaryKey" json:"id"`
-	NickName  string `json:"nick_name"`
-	HeadImage string `json:"head_image"`
-	Points    int    `json:"points"`
-	Level     int    `json:"level"`
-	Tele      string `json:"tele"`
-	OpenID    string `json:"open_id"`
+	ID        string `gorm:"column:id;primaryKey" json:"id"`
+	NickName  string `gorm:"column:nick_name" json:"nick_name"`
+	HeadImage string `gorm:"column:head_image" json:"head_image"`
+	Points    int    `gorm:"column:points" json:"points"`
+	Level     int    `gorm:"column:level;default:0" json:"level"`
+	Tele      string `gorm:"column:tele" json:"tele"`
+	OpenID    string `gorm:"column:open_id" json:"open_id"`
 }
 
 func NewUser() User {

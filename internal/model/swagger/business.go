@@ -13,3 +13,7 @@ type BusinessListSwagger struct {
 	Msg  string       `json:"msg"`
 	Data BusinessData `json:"data"`
 }
+type ScoreData struct {
+	BusinessID int     `json:"business_id"`
+	Score      float64 `json:"score"`
+}
