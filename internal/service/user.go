@@ -93,7 +93,7 @@ func (svc *Service) Login(params *LoginRequest) (bool, string, *errcode.Error) {
 	return first, token, errcode.Success
 }
 func (svc *Service) UpdateInfo(params *UpdateInfoRequest) *errcode.Error {
-	_, ok := svc.dao.FindUserByID(params.ID)
+	ok := svc.dao.IsExistUser(params.ID)
 	mp := make(map[string]interface{})
 	if !ok {
 		return errcode.NotFound

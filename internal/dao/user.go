@@ -11,7 +11,7 @@ func (d *Dao) CreateUser(user model.User) error {
 	var id string
 	for {
 		id = random.GenerateRandomNumberString(10)
-		_, ok := d.FindUserByID(id)
+		ok := d.IsExistUser(id) //检验id是否存在
 		if !ok {
 			break
 		}
@@ -48,4 +48,9 @@ func (d *Dao) GetBusinesses(limit int, offset int) ([]model.Business, error) {
 	var busses []model.Business
 	err := d.engine.Model(&model.Business{}).Limit(limit).Offset(offset).Find(&busses).Error
 	return busses, err
+}
+func (d *Dao) IsExistUser(id string) bool {
+	var num int64
+	d.engine.Model(&model.User{}).Where("id = ?",id).Count(&num)
+	return num > 0
 }
